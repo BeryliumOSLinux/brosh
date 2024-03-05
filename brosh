@@ -1,0 +1,218 @@
+profile picture
+#!/bin/bash
+# brosh - a ChromeOS style shell for BeryliumOS
+# Version 1.1.4
+# 2024 KnuxBoy04
+
+# Define colors for a Chromebook-like prompt
+prompt_color="\033[1;33m" # Yellow for prompt
+reset_color="\033[0m"
+cursor_color="\033[1;31m" # Crimson for cursor (unused)
+
+config_dir="${HOME}/.brosh"
+config_file="${config_dir}/brosh_config.txt"
+
+default_config="# Configuration for brosh script
+
+enable_shell=false
+"
+
+# Function to read the flag value from the config file
+read_flag_value() {
+ if [ -f "$config_file" ]; then
+  enable_shell=$(cat "$config_file")
+ else
+  enable_shell=$default_enable_shell
+  echo "$enable_shell" > "$config_file"
+ fi
+}
+
+# Function to update the flag value in the config file
+update_flag_value() {
+ echo "$1" > "$config_file"
+}
+
+# Read the flag value
+read_flag_value
+
+# Define default flag value
+default_enable_shell=false
+
+# Welcome message
+welcome_message="Welcome to brosh, the BeryliumOS system shell.
+
+If you got here by mistake, don't panic! Just close this tab and carry on.
+Type 'help' for a list of commands.
+
+To customize the look and behavior, use the options page (Ctrl+Shift+P)."
+
+clear
+echo "$welcome_message"
+echo ""
+
+# Function to display the prompt
+function display_prompt() {
+ echo -n -e "${prompt_color}brosh> ${reset_color}"
+}
+
+
+# Store command history in an array
+history_commands=()
+history_index=0
+
+# Function to add a command to history
+function add_to_history() {
+ if [ "$command" != "" ]; then
+  history_commands[${#history_commands[@]}]="$command"
+  history_index=${#history_commands[@]}
+ fi
+}
+
+
+# Function to check internet connectivity
+function check_connectivity() {
+ # Try pinging Google DNS server and a public website
+ if ping -c 1 -W 1 8.8.8.8 >/dev/null 2>&1 && ping -c 1 -W 1 www.google.com >/dev/null 2>&1; then
+  echo "🟢 Connected to the internet"
+ else
+  # If ping fails, try nslookup to check DNS resolution
+  if nslookup www.google.com >/dev/null 2>&1; then
+   echo "⚠️ Limited connectivity: DNS works, but ping failed"
+  else
+   echo " No internet connection"
+  fi
+ fi
+}
+
+# Function to simulate a memory test
+function memory_test() {
+ echo "** WARNING: This is a simulated memory test and does not perform actual memory diagnostics. **"
+ echo "It only displays free and used memory information."
+ free -m
+}
+
+# Function to display Bluetooth information (limited)
+function bt_console() {
+ # Check if Bluetooth is enabled (replace with actual command based on your system)
+ if [ "$(bluetoothctl info)" ]; then
+  echo "Bluetooth is enabled."
+  # Limited information using available commands (replace with desired output)
+  echo "Paired devices:"
+  bluetoothctl paired-devices
+ else
+  echo "Bluetooth is not enabled."
+ fi
+}
+
+
+# Function to display recent syslog entries (limited)
+function syslog() {
+ echo "** WARNING: This displays only the most recent syslog entries. Use dedicated tools for comprehensive logs. **"
+ tail /var/log/syslog | head -n 10
+}
+
+
+# Simulate some basic brosh commands
+while true; do
+ display_prompt
+ read command args
+  add_to_history
+ case "$command" in
+  help)
+   echo "Available commands (simulated or limited functionality):"
+   echo " help: Display this help message"
+   echo " exit: Exit the brosh simulation"
+   echo " ping: Send ping requests to a host"
+   echo " uptime: Show system uptime"
+   echo " ipconfig: Display network information (ifconfig)"
+   echo " battery: Show battery information (requires acpi)"
+   echo " shell: Open a full Bash shell"
+   echo " diag: Run basic system diagnostics (limited)"
+   echo " version: Display Chrome OS version (simulated)"
+   echo " restart: **SIMULATED** Restart warning"
+   echo " poweroff: **SIMULATED** Power off warning"
+   echo " connectivity: Check internet connection"
+   echo " memory_test: **SIMULATED** Memory test (displays free/used memory)"
+   echo " bluetooth: Display Bluetooth information (limited)"
+   echo " syslog: Display recent syslog entries (limited)"
+   echo " **WARNING:** Commands like restart and poweroff do not perform actual actions."
+   ;;
+  exit)
+   echo "Exiting brosh simulation..."
+   exit 0
+   ;;
+  ping)
+   if [ -z "$args" ]; then
+    echo "Usage: ping <hostname>"
+   else
+    ping -c 3 "$args"
+   fi
+   ;;
+  uptime)
+   uptime
+   ;;
+  ipconfig)
+   ifconfig
+   ;;
+  battery)
+   if [ -x "$(command -v acpi)" ]; then
+    acpi -b
+   else
+    echo "acpi command not found. Battery information unavailable."
+   fi
+   ;;
+  shell)
+  if [[ $enable_shell == true ]]; then
+   bash
+  else
+   echo "Shell command is currently disabled."
+  fi
+   ;;
+  diag)
+   # Limited diagnostics using available commands
+   echo "CPU info:"
+   cat /proc/cpuinfo | head -n 5
+   echo "Memory info:"
+   free -m
+   echo "Disk usage:"
+   df -h | head -n 2
+   ;;
+  version)
+   echo "Chrome OS Version: (Simulated) 100.0.0.0"
+   ;;
+  restart)
+   echo "** WARNING: Simulated restart. No actual system restart will occur. **"
+   ;;
+  poweroff)
+   echo "** WARNING: Simulated power off. No actual system shutdown will occur. **"
+   ;;
+  syslog)
+   syslog
+   ;;
+  memory_test)
+   memory_test
+   ;;
+  bluetooth)
+   bluetooth_console
+   ;;
+  connectivity)
+   check_connectivity
+   ;;
+  clear)
+   clear
+   ;;
+  enable_shell)
+  enable_shell=true
+  update_flag_value "true"
+  echo "Shell command enabled."
+   ;;
+  disable_shell)
+  enable_shell=false
+  update_flag_value "false"
+  echo "Shell command disabled."
+   ;;
+  *)
+   echo "Unknown command: '$command'"
+   ;;
+ esac
+done
